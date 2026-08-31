@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS repos (
   owner TEXT NOT NULL,
   name TEXT NOT NULL,
   watch_label TEXT NOT NULL DEFAULT 'issueops',
+  allowed_authors TEXT NOT NULL DEFAULT '[]',
   interval_minutes INTEGER NOT NULL DEFAULT 30,
   autonomy TEXT NOT NULL DEFAULT 'plan-pr-merge',
   concurrency INTEGER NOT NULL DEFAULT 1,
@@ -61,11 +62,22 @@ CREATE UNIQUE INDEX IF NOT EXISTS run_events_run_seq ON run_events (run_id, seq)
 
 export type Db = ReturnType<typeof createDb>
 
+// Additive migrations for databases created before a column existed; each is a
+// no-op (caught) once applied.
+const MIGRATIONS = [`ALTER TABLE repos ADD COLUMN allowed_authors TEXT NOT NULL DEFAULT '[]'`]
+
 export function createDb(file: string) {
   const sqlite = new Database(file)
   sqlite.pragma('journal_mode = WAL')
   sqlite.pragma('foreign_keys = ON')
   sqlite.exec(BOOTSTRAP)
+  for (const migration of MIGRATIONS) {
+    try {
+      sqlite.exec(migration)
+    } catch {
+      // column already exists
+    }
+  }
   return drizzle(sqlite, { schema })
 }
 

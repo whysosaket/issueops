@@ -52,10 +52,17 @@ export async function pollRepo(
   if (!repo?.enabled) return { discovered: 0, enqueued: 0 }
 
   let remote: RemoteIssue[]
+  // Poll with an overlap window behind the cursor: GitHub's since/label index can lag,
+  // and a cursor that advances past a just-created issue would hide it forever.
+  // Re-discovered issues are deduped by eligibility (state labels + run history).
+  const OVERLAP_MS = 10 * 60_000
+  const polledAt = new Date().toISOString()
   try {
     remote = await ctx.github.listOpenIssues(repo.owner, repo.name, {
       label: repo.watchLabel || undefined,
-      since: repo.lastPolledAt ?? undefined,
+      since: repo.lastPolledAt
+        ? new Date(Date.parse(repo.lastPolledAt) - OVERLAP_MS).toISOString()
+        : undefined,
     })
   } catch (err) {
     ctx.github.invalidate()
@@ -73,8 +80,12 @@ export async function pollRepo(
       .all()
       .map((x) => x.status)
     const check = checkEligibility(
-      { state: r.state, labels: r.labels, isPullRequest: r.isPullRequest },
-      { watchLabel: repo.watchLabel, priorRunStatuses: prior },
+      { state: r.state, labels: r.labels, author: r.author, isPullRequest: r.isPullRequest },
+      {
+        watchLabel: repo.watchLabel,
+        allowedAuthors: JSON.parse(repo.allowedAuthors) as string[],
+        priorRunStatuses: prior,
+      },
     )
     if (!check.eligible) {
       log.info(`skip ${repo.owner}/${repo.name}#${r.number}: ${check.reason}`)
@@ -89,10 +100,6 @@ export async function pollRepo(
     enqueued++
   }
 
-  ctx.db
-    .update(repos)
-    .set({ lastPolledAt: new Date().toISOString() })
-    .where(eq(repos.id, repo.id))
-    .run()
+  ctx.db.update(repos).set({ lastPolledAt: polledAt }).where(eq(repos.id, repo.id)).run()
   return { discovered: remote.length, enqueued }
 }

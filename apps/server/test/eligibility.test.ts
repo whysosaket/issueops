@@ -1,8 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { checkEligibility } from '../src/eligibility'
 
-const open = { state: 'open', labels: ['issueops'], isPullRequest: false }
-const ctx = { watchLabel: 'issueops', priorRunStatuses: [] as string[] }
+const open = { state: 'open', labels: ['issueops'], author: 'alice', isPullRequest: false }
+const ctx = {
+  watchLabel: 'issueops',
+  allowedAuthors: [] as string[],
+  priorRunStatuses: [] as string[],
+}
 
 describe('checkEligibility', () => {
   it('accepts an open issue with the watch label and no history', () => {
@@ -27,6 +31,15 @@ describe('checkEligibility', () => {
     expect(checkEligibility({ ...open, labels: [] }, { ...ctx, watchLabel: '' }).eligible).toBe(
       true,
     )
+  })
+
+  it('enforces the author allowlist when set', () => {
+    const allowlisted = { ...ctx, allowedAuthors: ['alice', 'bob'] }
+    expect(checkEligibility(open, allowlisted).eligible).toBe(true)
+    const outsider = checkEligibility({ ...open, author: 'mallory' }, allowlisted)
+    expect(outsider.eligible).toBe(false)
+    expect(outsider.reason).toContain('allowlist')
+    expect(checkEligibility({ ...open, author: null }, allowlisted).eligible).toBe(false)
   })
 
   it('rejects issues that already carry an issueops state label', () => {

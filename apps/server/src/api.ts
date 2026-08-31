@@ -32,7 +32,11 @@ type RunRow = typeof runs.$inferSelect
 const TERMINAL: RunStatus[] = ['succeeded', 'failed', 'cancelled', 'interrupted']
 
 function toRepo(row: RepoRow): Repo {
-  return { ...row, autonomy: row.autonomy as Autonomy }
+  return {
+    ...row,
+    autonomy: row.autonomy as Autonomy,
+    allowedAuthors: JSON.parse(row.allowedAuthors) as string[],
+  }
 }
 
 function toIssue(row: IssueRow): Issue {
@@ -92,6 +96,7 @@ export function createApi(ctx: AppContext): Hono {
         owner: remote.owner,
         name: remote.name,
         ...settings,
+        allowedAuthors: JSON.stringify(settings.allowedAuthors),
         createdAt: new Date().toISOString(),
       })
       .returning()
@@ -105,10 +110,18 @@ export function createApi(ctx: AppContext): Hono {
 
   app.patch('/api/repos/:id', async (c) => {
     const id = Number(c.req.param('id'))
-    const patch = RepoUpdateSchema.parse(await c.req.json())
+    const { allowedAuthors, ...patch } = RepoUpdateSchema.parse(await c.req.json())
     const existing = db.select().from(repos).where(eq(repos.id, id)).get()
     if (!existing) return c.json({ error: 'repo not found' }, 404)
-    const row = db.update(repos).set(patch).where(eq(repos.id, id)).returning().get()
+    const row = db
+      .update(repos)
+      .set({
+        ...patch,
+        ...(allowedAuthors !== undefined && { allowedAuthors: JSON.stringify(allowedAuthors) }),
+      })
+      .where(eq(repos.id, id))
+      .returning()
+      .get()
     return c.json(toRepo(row))
   })
 

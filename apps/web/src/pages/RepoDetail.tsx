@@ -32,6 +32,7 @@ function RepoSettings({ repoId }: { repoId: number }) {
   if (!repo) return null
   const value = {
     watchLabel: repo.watchLabel,
+    allowedAuthors: repo.allowedAuthors,
     intervalMinutes: repo.intervalMinutes,
     autonomy: repo.autonomy,
     concurrency: repo.concurrency,
@@ -50,6 +51,21 @@ function RepoSettings({ repoId }: { repoId: number }) {
             className={inputClass}
             value={value.watchLabel ?? ''}
             onChange={(e) => set({ watchLabel: e.target.value })}
+          />
+        </Field>
+        <Field label="Allowed authors (comma-separated, empty = anyone)">
+          <input
+            className={inputClass}
+            value={(value.allowedAuthors ?? []).join(', ')}
+            placeholder="alice, bob"
+            onChange={(e) =>
+              set({
+                allowedAuthors: e.target.value
+                  .split(',')
+                  .map((author) => author.trim())
+                  .filter(Boolean),
+              })
+            }
           />
         </Field>
         <Field label="Poll interval (minutes)">

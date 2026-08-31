@@ -80,6 +80,8 @@ issueops doctor      Environment checks (--smoke runs a real claude call)
 Full-auto merge is powerful, so the defaults are deliberately careful:
 
 - **Label-gated**: only issues carrying the watch label are ever dispatched.
+- **Author allowlist** (optional, per repo): restrict dispatch to issues opened by specific
+  GitHub users — recommended for public repos running above `plan-only`.
 - **Locked-down runs**: headless Claude Code gets `--permission-mode acceptEdits` plus an
   allowlist (`git`, `gh`, your test command) — nothing else is auto-approved; `--max-turns`
   and an optional per-repo budget cap bound each run.

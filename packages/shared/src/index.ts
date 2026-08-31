@@ -74,6 +74,7 @@ export const GlobalConfigUpdateSchema = GlobalConfigSchema.partial()
 
 export const RepoSettingsSchema = z.object({
   watchLabel: z.string().default(DEFAULT_WATCH_LABEL),
+  allowedAuthors: z.array(z.string()).default([]),
   intervalMinutes: z.number().int().min(1).default(30),
   autonomy: AutonomySchema.default('plan-pr-merge'),
   concurrency: z.number().int().min(1).max(4).default(1),
@@ -97,6 +98,7 @@ export interface Repo {
   owner: string
   name: string
   watchLabel: string
+  allowedAuthors: string[]
   intervalMinutes: number
   autonomy: Autonomy
   concurrency: number

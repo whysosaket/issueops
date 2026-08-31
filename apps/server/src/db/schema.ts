@@ -6,6 +6,7 @@ export const repos = sqliteTable('repos', {
   owner: text('owner').notNull(),
   name: text('name').notNull(),
   watchLabel: text('watch_label').notNull().default('issueops'),
+  allowedAuthors: text('allowed_authors').notNull().default('[]'),
   intervalMinutes: integer('interval_minutes').notNull().default(30),
   autonomy: text('autonomy').notNull().default('plan-pr-merge'),
   concurrency: integer('concurrency').notNull().default(1),
