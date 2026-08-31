@@ -1,0 +1,17 @@
+name: Feature request
+description: Propose an improvement to issueops
+labels: [issueops]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: What should issueops do? Be concrete — these issues are handled by issueops itself.
+    validations:
+      required: true

@@ -1,0 +1,23 @@
+{
+  "name": "issueops",
+  "version": "0.1.0",
+  "description": "Local control plane that turns GitHub issues into Claude Code runs",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "issueops": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc"
+  },
+  "dependencies": {
+    "@issueops/server": "workspace:*",
+    "@issueops/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.6.0"
+  }
+}
