@@ -16,6 +16,7 @@ export const repos = sqliteTable('repos', {
   guardrails: text('guardrails').notNull().default(''),
   instructions: text('instructions').notNull().default(''),
   contextFiles: text('context_files').notNull().default('[]'),
+  skills: text('skills').notNull().default('[]'),
   enabled: integer('enabled', { mode: 'boolean' }).notNull().default(true),
   lastPolledAt: text('last_polled_at'),
   createdAt: text('created_at').notNull(),

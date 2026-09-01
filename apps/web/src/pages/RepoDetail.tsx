@@ -7,6 +7,7 @@ import {
   useIssues,
   usePollNow,
   useRepos,
+  useSkills,
   useUpdateRepo,
 } from '../api'
 import { Button, Card, PageTitle, StatusBadge } from '../components'
@@ -26,6 +27,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 function RepoSettings({ repoId }: { repoId: number }) {
   const { data: repos } = useRepos()
+  const { data: librarySkills } = useSkills()
   const repo = repos?.find((r) => r.id === repoId)
   const update = useUpdateRepo(repoId)
   const [form, setForm] = useState<RepoUpdate | null>(null)
@@ -42,6 +44,7 @@ function RepoSettings({ repoId }: { repoId: number }) {
     guardrails: repo.guardrails,
     instructions: repo.instructions,
     contextFiles: repo.contextFiles,
+    skills: repo.skills,
     enabled: repo.enabled,
     ...form,
   }
@@ -172,6 +175,59 @@ function RepoSettings({ repoId }: { repoId: number }) {
               })
             }
           />
+        </Field>
+      </div>
+      <div className="mt-4">
+        <Field label="Attached skills">
+          <div className="rounded-lg border border-zinc-700 bg-zinc-900 p-3">
+            <label className="flex items-center gap-2 text-sm text-zinc-300">
+              <input
+                type="checkbox"
+                checked={(value.skills ?? []).length === 0}
+                onChange={(e) =>
+                  set({
+                    skills: e.target.checked ? [] : (librarySkills?.map((s) => s.name) ?? []),
+                  })
+                }
+              />
+              Whole library (default) — every shipped and custom skill mounts into this repo's runs
+            </label>
+            {(value.skills ?? []).length > 0 && (
+              <>
+                <div className="mt-3 grid grid-cols-2 gap-1.5 md:grid-cols-3">
+                  {librarySkills?.map((skill) => {
+                    const selected = value.skills ?? []
+                    return (
+                      <label
+                        key={skill.name}
+                        className="flex items-center gap-2 text-xs text-zinc-300"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selected.includes(skill.name)}
+                          onChange={(e) =>
+                            set({
+                              skills: e.target.checked
+                                ? [...selected, skill.name]
+                                : selected.filter((name) => name !== skill.name),
+                            })
+                          }
+                        />
+                        <span className="font-mono">{skill.name}</span>
+                        {skill.shipped && (
+                          <span className="text-[10px] text-indigo-300">shipped</span>
+                        )}
+                      </label>
+                    )
+                  })}
+                </div>
+                <p className="mt-2 text-[11px] text-zinc-500">
+                  Only the checked skills mount into this repo's runs. Deselecting every skill
+                  re-attaches the whole library.
+                </p>
+              </>
+            )}
+          </div>
         </Field>
       </div>
       <div className="mt-4 flex items-center gap-3">

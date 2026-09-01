@@ -64,7 +64,7 @@ export function buildSystemContract(spec: RunSpec): string {
     ? `- Test command: \`${spec.testCommand}\` — run it and make it pass before opening a PR.`
     : '- No test command is configured; if the repo has an obvious test setup, run it before opening a PR.'
   return `You are running unattended inside issueops, handling GitHub issue #${spec.issueNumber} of ${spec.owner}/${spec.name}.
-Follow the issueops-handler skill for the full playbook; after triage, follow the case playbook skill it points to (issueops-bug, issueops-feature, issueops-question, issueops-docs, issueops-chore). Non-negotiable rules:
+Follow the issueops-handler skill for the full playbook; after triage, follow the matching issueops-* case playbook skill when one is available. Non-negotiable rules:
 - Autonomy level "${spec.autonomy}": ${AUTONOMY_CONTRACT[spec.autonomy]}
 - Work only inside ${spec.repoPath}. Never touch files outside it.
 - Never commit to the default branch, never force-push, never delete branches you did not create. Do your work on branch issueops/issue-${spec.issueNumber}.

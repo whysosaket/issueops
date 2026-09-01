@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS repos (
   guardrails TEXT NOT NULL DEFAULT '',
   instructions TEXT NOT NULL DEFAULT '',
   context_files TEXT NOT NULL DEFAULT '[]',
+  skills TEXT NOT NULL DEFAULT '[]',
   enabled INTEGER NOT NULL DEFAULT 1,
   last_polled_at TEXT,
   created_at TEXT NOT NULL
@@ -72,6 +73,7 @@ const MIGRATIONS = [
   `ALTER TABLE repos ADD COLUMN guardrails TEXT NOT NULL DEFAULT ''`,
   `ALTER TABLE repos ADD COLUMN instructions TEXT NOT NULL DEFAULT ''`,
   `ALTER TABLE repos ADD COLUMN context_files TEXT NOT NULL DEFAULT '[]'`,
+  `ALTER TABLE repos ADD COLUMN skills TEXT NOT NULL DEFAULT '[]'`,
 ]
 
 export function createDb(file: string) {

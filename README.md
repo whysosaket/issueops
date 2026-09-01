@@ -101,8 +101,12 @@ force. Skills are model-selected playbooks; issueops ships six:
 Add your own skills from the dashboard's **Skills** page (or drop
 `SKILL.md` files into `~/.issueops/skills-mount/.claude/skills/<name>/`) — team conventions,
 stack-specific playbooks, deploy rituals. Shipped skills can be edited too; `issueops init`
-restores the originals. And because runs execute inside your repo checkout, a repo's own
-`CLAUDE.md` and `.claude/skills/` load natively as well.
+restores the originals.
+
+**Skills attach per repo.** By default a repo gets the whole library; the repo page's
+"Attached skills" picker narrows it to a curated subset (a per-repo mount is assembled fresh
+for every run). And because runs execute inside your repo checkout, a repo's own `CLAUDE.md`
+and `.claude/skills/` load natively as a third, code-versioned attachment point.
 
 ## Safety model
 

@@ -30,6 +30,7 @@ import {
   listSkills,
   readGlobalGuardrails,
   readSkill,
+  removeRepoSkillsMount,
   writeGlobalGuardrails,
   writeSkill,
 } from './skills'
@@ -46,6 +47,7 @@ function toRepo(row: RepoRow): Repo {
     autonomy: row.autonomy as Autonomy,
     allowedAuthors: JSON.parse(row.allowedAuthors) as string[],
     contextFiles: JSON.parse(row.contextFiles) as string[],
+    skills: JSON.parse(row.skills) as string[],
   }
 }
 
@@ -108,6 +110,7 @@ export function createApi(ctx: AppContext): Hono {
         ...settings,
         allowedAuthors: JSON.stringify(settings.allowedAuthors),
         contextFiles: JSON.stringify(settings.contextFiles),
+        skills: JSON.stringify(settings.skills),
         createdAt: new Date().toISOString(),
       })
       .returning()
@@ -121,7 +124,9 @@ export function createApi(ctx: AppContext): Hono {
 
   app.patch('/api/repos/:id', async (c) => {
     const id = Number(c.req.param('id'))
-    const { allowedAuthors, contextFiles, ...patch } = RepoUpdateSchema.parse(await c.req.json())
+    const { allowedAuthors, contextFiles, skills, ...patch } = RepoUpdateSchema.parse(
+      await c.req.json(),
+    )
     const existing = db.select().from(repos).where(eq(repos.id, id)).get()
     if (!existing) return c.json({ error: 'repo not found' }, 404)
     const row = db
@@ -130,6 +135,7 @@ export function createApi(ctx: AppContext): Hono {
         ...patch,
         ...(allowedAuthors !== undefined && { allowedAuthors: JSON.stringify(allowedAuthors) }),
         ...(contextFiles !== undefined && { contextFiles: JSON.stringify(contextFiles) }),
+        ...(skills !== undefined && { skills: JSON.stringify(skills) }),
       })
       .where(eq(repos.id, id))
       .returning()
@@ -152,6 +158,7 @@ export function createApi(ctx: AppContext): Hono {
     db.delete(runs).where(eq(runs.repoId, id)).run()
     db.delete(issues).where(eq(issues.repoId, id)).run()
     db.delete(repos).where(eq(repos.id, id)).run()
+    removeRepoSkillsMount(id)
     return c.json({ ok: true })
   })
 

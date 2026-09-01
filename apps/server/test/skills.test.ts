@@ -4,6 +4,7 @@ import path from 'node:path'
 import { paths } from '@issueops/shared/node'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import {
+  buildRepoSkillsMount,
   deleteSkill,
   listSkills,
   parseSkillDescription,
@@ -63,6 +64,20 @@ describe('skills module', () => {
     for (const name of ['../evil', 'a/b', 'UPPER', '.hidden', '']) {
       expect(() => writeSkill(name, SKILL)).toThrow(/invalid skill name/)
     }
+  })
+
+  it('builds a per-repo mount with only the selected skills', () => {
+    writeSkill('alpha', SKILL)
+    writeSkill('beta', SKILL)
+
+    const mount = buildRepoSkillsMount(7, ['alpha', 'missing', '../evil'])
+    const skillsRoot = path.join(mount, '.claude', 'skills')
+    expect(fs.readdirSync(skillsRoot)).toEqual(['alpha'])
+    expect(fs.existsSync(path.join(skillsRoot, 'alpha', 'SKILL.md'))).toBe(true)
+
+    // rebuilding replaces the previous selection entirely
+    buildRepoSkillsMount(7, ['beta'])
+    expect(fs.readdirSync(skillsRoot)).toEqual(['beta'])
   })
 
   it('round-trips global guardrails and defaults to empty', () => {

@@ -16,7 +16,7 @@ import { issues, repos, runEvents, runs } from './db/schema'
 import { bestEffort, type GitHubService } from './github'
 import { log } from './logger'
 import { buildPrompt, buildSystemContract, type RunSpec } from './prompt'
-import { readGlobalGuardrails } from './skills'
+import { buildRepoSkillsMount, readGlobalGuardrails } from './skills'
 
 export interface RunnerDeps {
   db: Db
@@ -141,7 +141,16 @@ export async function executeRun(deps: RunnerDeps, runId: number): Promise<void>
     comments,
   }
 
-  const args = buildClaudeArgs(repo, buildSystemContract(spec), deps.skillsMountDir)
+  const attachedSkills = JSON.parse(repo.skills) as string[]
+  let skillsMount = deps.skillsMountDir
+  if (attachedSkills.length) {
+    try {
+      skillsMount = buildRepoSkillsMount(repo.id, attachedSkills)
+    } catch (err) {
+      log.warn(`run ${runId}: per-repo skills mount failed, using full library`, err)
+    }
+  }
+  const args = buildClaudeArgs(repo, buildSystemContract(spec), skillsMount)
   const child = spawn(deps.config.claudeBin, args, {
     cwd: repo.path,
     env: { ...process.env, FORCE_COLOR: '0' },

@@ -84,6 +84,7 @@ export const RepoSettingsSchema = z.object({
   guardrails: z.string().default(''),
   instructions: z.string().default(''),
   contextFiles: z.array(z.string()).default([]),
+  skills: z.array(z.string()).default([]),
   enabled: z.boolean().default(true),
 })
 
@@ -111,6 +112,8 @@ export interface Repo {
   guardrails: string
   instructions: string
   contextFiles: string[]
+  /** Skill names attached to this repo's runs; empty = the whole library. */
+  skills: string[]
   enabled: boolean
   lastPolledAt: string | null
   createdAt: string

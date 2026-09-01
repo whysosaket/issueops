@@ -1,7 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { SKILL_NAME_PATTERN, type SkillInfo } from '@issueops/shared'
-import { paths } from '@issueops/shared/node'
+import { appDir, paths } from '@issueops/shared/node'
 
 function shippedNames(): Set<string> {
   try {
@@ -67,6 +67,33 @@ export function deleteSkill(name: string): boolean {
   if (!fs.existsSync(dir)) return false
   fs.rmSync(dir, { recursive: true })
   return true
+}
+
+export function repoMountDir(repoId: number): string {
+  return path.join(appDir(), 'repo-mounts', String(repoId))
+}
+
+/**
+ * Assemble a per-repo skills mount containing only the named skills, copied
+ * fresh from the library on every build so edits and deletions propagate.
+ * Unknown or invalid names are skipped. Returns the dir to pass to --add-dir.
+ */
+export function buildRepoSkillsMount(repoId: number, names: string[]): string {
+  const mount = repoMountDir(repoId)
+  const skillsRoot = path.join(mount, '.claude', 'skills')
+  fs.rmSync(mount, { recursive: true, force: true })
+  fs.mkdirSync(skillsRoot, { recursive: true })
+  for (const name of names) {
+    if (!SKILL_NAME_PATTERN.test(name)) continue
+    const source = path.join(paths.skillsDir(), name)
+    if (!fs.existsSync(path.join(source, 'SKILL.md'))) continue
+    fs.cpSync(source, path.join(skillsRoot, name), { recursive: true })
+  }
+  return mount
+}
+
+export function removeRepoSkillsMount(repoId: number): void {
+  fs.rmSync(repoMountDir(repoId), { recursive: true, force: true })
 }
 
 export function readGlobalGuardrails(): string {
