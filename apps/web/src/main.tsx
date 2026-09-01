@@ -7,6 +7,7 @@ import Home from './pages/Home'
 import RepoDetail from './pages/RepoDetail'
 import RunDetail from './pages/RunDetail'
 import Settings from './pages/Settings'
+import Skills from './pages/Skills'
 import './styles.css'
 
 const queryClient = new QueryClient({
@@ -24,6 +25,7 @@ if (root) {
               <Route index element={<Home />} />
               <Route path="repos/:id" element={<RepoDetail />} />
               <Route path="runs/:id" element={<RunDetail />} />
+              <Route path="skills" element={<Skills />} />
               <Route path="settings" element={<Settings />} />
             </Route>
           </Routes>

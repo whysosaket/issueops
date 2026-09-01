@@ -16,6 +16,7 @@ import { issues, repos, runEvents, runs } from './db/schema'
 import { bestEffort, type GitHubService } from './github'
 import { log } from './logger'
 import { buildPrompt, buildSystemContract, type RunSpec } from './prompt'
+import { readGlobalGuardrails } from './skills'
 
 export interface RunnerDeps {
   db: Db
@@ -128,6 +129,10 @@ export async function executeRun(deps: RunnerDeps, runId: number): Promise<void>
     name: repo.name,
     autonomy: repo.autonomy as Autonomy,
     testCommand: repo.testCommand,
+    globalGuardrails: readGlobalGuardrails(),
+    repoGuardrails: repo.guardrails,
+    instructions: repo.instructions,
+    contextFiles: JSON.parse(repo.contextFiles) as string[],
     issueNumber: issue.number,
     issueTitle: issue.title,
     issueUrl: issue.url,

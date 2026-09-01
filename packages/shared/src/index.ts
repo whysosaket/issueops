@@ -81,6 +81,9 @@ export const RepoSettingsSchema = z.object({
   testCommand: z.string().nullable().default(null),
   maxTurns: z.number().int().min(1).default(100),
   maxBudgetUsd: z.number().positive().nullable().default(null),
+  guardrails: z.string().default(''),
+  instructions: z.string().default(''),
+  contextFiles: z.array(z.string()).default([]),
   enabled: z.boolean().default(true),
 })
 
@@ -105,6 +108,9 @@ export interface Repo {
   testCommand: string | null
   maxTurns: number
   maxBudgetUsd: number | null
+  guardrails: string
+  instructions: string
+  contextFiles: string[]
   enabled: boolean
   lastPolledAt: string | null
   createdAt: string
@@ -145,6 +151,15 @@ export interface Run {
 export interface RunListItem extends Run {
   repoName: string
   issueTitle: string
+}
+
+export const SKILL_NAME_PATTERN = /^[a-z0-9][a-z0-9-]*$/
+
+export interface SkillInfo {
+  name: string
+  description: string
+  shipped: boolean
+  size: number
 }
 
 export interface Health {

@@ -12,18 +12,27 @@ import {
   RepoUpdateSchema,
   type Run,
   type RunStatus,
+  SKILL_NAME_PATTERN,
 } from '@issueops/shared'
 import { saveConfig } from '@issueops/shared/node'
 import { and, desc, eq, inArray } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { streamSSE } from 'hono/streaming'
-import { ZodError } from 'zod'
+import { ZodError, z } from 'zod'
 import type { AppContext } from './context'
 import { issues, repos, runEvents, runs } from './db/schema'
 import { bestEffort, detectGitHubRemote } from './github'
 import { log } from './logger'
 import { createRun, pollRepo } from './poller'
 import { cancelRun } from './runner'
+import {
+  deleteSkill,
+  listSkills,
+  readGlobalGuardrails,
+  readSkill,
+  writeGlobalGuardrails,
+  writeSkill,
+} from './skills'
 
 type RepoRow = typeof repos.$inferSelect
 type IssueRow = typeof issues.$inferSelect
@@ -36,6 +45,7 @@ function toRepo(row: RepoRow): Repo {
     ...row,
     autonomy: row.autonomy as Autonomy,
     allowedAuthors: JSON.parse(row.allowedAuthors) as string[],
+    contextFiles: JSON.parse(row.contextFiles) as string[],
   }
 }
 
@@ -97,6 +107,7 @@ export function createApi(ctx: AppContext): Hono {
         name: remote.name,
         ...settings,
         allowedAuthors: JSON.stringify(settings.allowedAuthors),
+        contextFiles: JSON.stringify(settings.contextFiles),
         createdAt: new Date().toISOString(),
       })
       .returning()
@@ -110,7 +121,7 @@ export function createApi(ctx: AppContext): Hono {
 
   app.patch('/api/repos/:id', async (c) => {
     const id = Number(c.req.param('id'))
-    const { allowedAuthors, ...patch } = RepoUpdateSchema.parse(await c.req.json())
+    const { allowedAuthors, contextFiles, ...patch } = RepoUpdateSchema.parse(await c.req.json())
     const existing = db.select().from(repos).where(eq(repos.id, id)).get()
     if (!existing) return c.json({ error: 'repo not found' }, 404)
     const row = db
@@ -118,6 +129,7 @@ export function createApi(ctx: AppContext): Hono {
       .set({
         ...patch,
         ...(allowedAuthors !== undefined && { allowedAuthors: JSON.stringify(allowedAuthors) }),
+        ...(contextFiles !== undefined && { contextFiles: JSON.stringify(contextFiles) }),
       })
       .where(eq(repos.id, id))
       .returning()
@@ -295,6 +307,41 @@ export function createApi(ctx: AppContext): Hono {
         ctx.events.off(`run:${runId}:event`, onEvent)
       }
     })
+  })
+
+  app.get('/api/skills', (c) => c.json(listSkills()))
+
+  app.get('/api/skills/:name', (c) => {
+    const name = c.req.param('name')
+    if (!SKILL_NAME_PATTERN.test(name)) return c.json({ error: 'invalid skill name' }, 400)
+    const content = readSkill(name)
+    if (content === null) return c.json({ error: 'skill not found' }, 404)
+    const shipped = listSkills().find((s) => s.name === name)?.shipped ?? false
+    return c.json({ name, content, shipped })
+  })
+
+  app.put('/api/skills/:name', async (c) => {
+    const name = c.req.param('name')
+    if (!SKILL_NAME_PATTERN.test(name)) {
+      return c.json({ error: 'skill name must be lowercase letters, digits, and hyphens' }, 400)
+    }
+    const { content } = z.object({ content: z.string().min(1) }).parse(await c.req.json())
+    return c.json(writeSkill(name, content))
+  })
+
+  app.delete('/api/skills/:name', (c) => {
+    const name = c.req.param('name')
+    if (!SKILL_NAME_PATTERN.test(name)) return c.json({ error: 'invalid skill name' }, 400)
+    if (!deleteSkill(name)) return c.json({ error: 'skill not found' }, 404)
+    return c.json({ ok: true })
+  })
+
+  app.get('/api/guardrails', (c) => c.json({ content: readGlobalGuardrails() }))
+
+  app.put('/api/guardrails', async (c) => {
+    const { content } = z.object({ content: z.string() }).parse(await c.req.json())
+    writeGlobalGuardrails(content)
+    return c.json({ content })
   })
 
   app.get('/api/settings', (c) => {

@@ -75,6 +75,35 @@ issueops open        Open the dashboard
 issueops doctor      Environment checks (--smoke runs a real claude call)
 ```
 
+## Customizing runs
+
+Every run's context is assembled in layers, highest trust first:
+
+| Layer | Where | Behavior |
+|---|---|---|
+| Core safety contract | built in | non-negotiable, always injected |
+| Global guardrails | `~/.issueops/guardrails.md` (Settings page) | binding policy for **every** repo |
+| Repo guardrails | per-repo setting | binding policy for that repo |
+| Repo instructions | per-repo setting | maintainer preferences ("conventional commits, strict TS") |
+| Context files | per-repo setting | repo-relative paths the run must read before triaging |
+| Skills | `~/.issueops/skills-mount/` (Skills page) | playbooks the run loads when relevant |
+
+Guardrails and instructions are injected into the system prompt of every run — always in
+force. Skills are model-selected playbooks; issueops ships six:
+
+- **issueops-handler** — the orchestrator: workflow, autonomy stop-points, conventions
+- **issueops-bug** — reproduce → root-cause → regression test → minimal fix
+- **issueops-feature** — fit existing patterns, MVP scope, tests + docs
+- **issueops-question** — answer from code with references, no code changes
+- **issueops-docs** — code is the source of truth; match the docs' voice
+- **issueops-chore** — deps/renames/CI: mechanical changes, full-suite verification
+
+Add your own skills from the dashboard's **Skills** page (or drop
+`SKILL.md` files into `~/.issueops/skills-mount/.claude/skills/<name>/`) — team conventions,
+stack-specific playbooks, deploy rituals. Shipped skills can be edited too; `issueops init`
+restores the originals. And because runs execute inside your repo checkout, a repo's own
+`CLAUDE.md` and `.claude/skills/` load natively as well.
+
 ## Safety model
 
 Full-auto merge is powerful, so the defaults are deliberately careful:

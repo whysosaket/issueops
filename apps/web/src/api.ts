@@ -1,4 +1,4 @@
-import type { Health, Issue, Repo, RepoUpdate, Run, RunListItem } from '@issueops/shared'
+import type { Health, Issue, Repo, RepoUpdate, Run, RunListItem, SkillInfo } from '@issueops/shared'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
@@ -101,6 +101,44 @@ export const useDispatchIssue = () =>
 export const useCancelRun = () =>
   useInvalidatingMutation([['runs'], ['run']], (runId: number) =>
     request<{ ok: true }>(`/api/runs/${runId}/cancel`, { method: 'POST', body: '{}' }),
+  )
+
+export const useSkills = () =>
+  useQuery({ queryKey: ['skills'], queryFn: () => request<SkillInfo[]>('/api/skills') })
+
+export const useSkill = (name: string | null) =>
+  useQuery({
+    queryKey: ['skill', name],
+    queryFn: () =>
+      request<{ name: string; content: string; shipped: boolean }>(`/api/skills/${name}`),
+    enabled: name !== null,
+  })
+
+export const useSaveSkill = () =>
+  useInvalidatingMutation([['skills'], ['skill']], (args: { name: string; content: string }) =>
+    request<SkillInfo>(`/api/skills/${args.name}`, {
+      method: 'PUT',
+      body: JSON.stringify({ content: args.content }),
+    }),
+  )
+
+export const useDeleteSkill = () =>
+  useInvalidatingMutation([['skills']], (name: string) =>
+    request<{ ok: true }>(`/api/skills/${name}`, { method: 'DELETE' }),
+  )
+
+export const useGuardrails = () =>
+  useQuery({
+    queryKey: ['guardrails'],
+    queryFn: () => request<{ content: string }>('/api/guardrails'),
+  })
+
+export const useSaveGuardrails = () =>
+  useInvalidatingMutation([['guardrails']], (content: string) =>
+    request<{ content: string }>('/api/guardrails', {
+      method: 'PUT',
+      body: JSON.stringify({ content }),
+    }),
   )
 
 export const useSaveSettings = () =>

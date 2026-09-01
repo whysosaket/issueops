@@ -16,6 +16,8 @@ export const paths = {
   pidFile: () => path.join(appDir(), 'daemon.pid'),
   skillsMountDir: () => path.join(appDir(), 'skills-mount'),
   skillsDir: () => path.join(appDir(), 'skills-mount', '.claude', 'skills'),
+  shippedSkillsManifest: () => path.join(appDir(), 'skills-mount', '.shipped.json'),
+  guardrailsFile: () => path.join(appDir(), 'guardrails.md'),
 }
 
 export function ensureAppDirs(): void {

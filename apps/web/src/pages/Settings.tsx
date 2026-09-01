@@ -1,6 +1,40 @@
 import { useState } from 'react'
-import { useSaveSettings, useSettings } from '../api'
+import { useGuardrails, useSaveGuardrails, useSaveSettings, useSettings } from '../api'
 import { Button, Card, PageTitle } from '../components'
+
+function GlobalGuardrails() {
+  const { data } = useGuardrails()
+  const save = useSaveGuardrails()
+  const [draft, setDraft] = useState<string | null>(null)
+  if (!data) return null
+  const content = draft ?? data.content
+  return (
+    <Card>
+      <h2 className="mb-1 text-sm font-semibold text-zinc-200">Global guardrails</h2>
+      <p className="mb-3 text-xs text-zinc-500">
+        Binding policy injected into every run across all repositories (~/.issueops/guardrails.md).
+      </p>
+      <textarea
+        value={content}
+        onChange={(e) => setDraft(e.target.value)}
+        spellCheck={false}
+        className="h-56 w-full resize-y rounded-lg border border-zinc-700 bg-zinc-950 p-3 font-mono text-xs leading-relaxed text-zinc-200 focus:border-indigo-500 focus:outline-none"
+      />
+      <div className="mt-3 flex items-center gap-3">
+        <Button
+          disabled={draft === null || save.isPending}
+          onClick={() => save.mutate(content, { onSuccess: () => setDraft(null) })}
+        >
+          Save guardrails
+        </Button>
+        {save.isError && <span className="text-sm text-red-400">{save.error.message}</span>}
+        {save.isSuccess && draft === null && (
+          <span className="text-sm text-emerald-400">Saved — applies to the next run.</span>
+        )}
+      </div>
+    </Card>
+  )
+}
 
 const FIELDS = [
   { key: 'host', label: 'Bind host', type: 'text' },
@@ -19,8 +53,9 @@ export default function Settings() {
   const value = { ...settings, ...form }
 
   return (
-    <div className="max-w-lg space-y-4">
+    <div className="max-w-2xl space-y-4">
       <PageTitle>Settings</PageTitle>
+      <GlobalGuardrails />
       <Card>
         <div className="space-y-4">
           {FIELDS.map((field) => (

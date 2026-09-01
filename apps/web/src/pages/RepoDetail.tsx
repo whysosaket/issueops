@@ -39,6 +39,9 @@ function RepoSettings({ repoId }: { repoId: number }) {
     testCommand: repo.testCommand,
     maxTurns: repo.maxTurns,
     maxBudgetUsd: repo.maxBudgetUsd,
+    guardrails: repo.guardrails,
+    instructions: repo.instructions,
+    contextFiles: repo.contextFiles,
     enabled: repo.enabled,
     ...form,
   }
@@ -136,6 +139,39 @@ function RepoSettings({ repoId }: { repoId: number }) {
             <option value="yes">watching</option>
             <option value="no">paused</option>
           </select>
+        </Field>
+      </div>
+      <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+        <Field label="Repository guardrails (binding policy, injected into every run)">
+          <textarea
+            className={`${inputClass} h-24 resize-y font-mono text-xs`}
+            value={value.guardrails ?? ''}
+            placeholder={'- Never touch infra/\n- All DB changes need a migration file'}
+            onChange={(e) => set({ guardrails: e.target.value })}
+          />
+        </Field>
+        <Field label="Special instructions (maintainer preferences, injected into every run)">
+          <textarea
+            className={`${inputClass} h-24 resize-y font-mono text-xs`}
+            value={value.instructions ?? ''}
+            placeholder={'Use conventional commits.\nPrefer small PRs.'}
+            onChange={(e) => set({ instructions: e.target.value })}
+          />
+        </Field>
+        <Field label="Context files (repo-relative paths runs must read first, comma-separated)">
+          <input
+            className={inputClass}
+            value={(value.contextFiles ?? []).join(', ')}
+            placeholder="docs/ARCHITECTURE.md, CONTRIBUTING.md"
+            onChange={(e) =>
+              set({
+                contextFiles: e.target.value
+                  .split(',')
+                  .map((p) => p.trim())
+                  .filter(Boolean),
+              })
+            }
+          />
         </Field>
       </div>
       <div className="mt-4 flex items-center gap-3">

@@ -16,6 +16,9 @@ CREATE TABLE IF NOT EXISTS repos (
   test_command TEXT,
   max_turns INTEGER NOT NULL DEFAULT 100,
   max_budget_usd REAL,
+  guardrails TEXT NOT NULL DEFAULT '',
+  instructions TEXT NOT NULL DEFAULT '',
+  context_files TEXT NOT NULL DEFAULT '[]',
   enabled INTEGER NOT NULL DEFAULT 1,
   last_polled_at TEXT,
   created_at TEXT NOT NULL
@@ -64,7 +67,12 @@ export type Db = ReturnType<typeof createDb>
 
 // Additive migrations for databases created before a column existed; each is a
 // no-op (caught) once applied.
-const MIGRATIONS = [`ALTER TABLE repos ADD COLUMN allowed_authors TEXT NOT NULL DEFAULT '[]'`]
+const MIGRATIONS = [
+  `ALTER TABLE repos ADD COLUMN allowed_authors TEXT NOT NULL DEFAULT '[]'`,
+  `ALTER TABLE repos ADD COLUMN guardrails TEXT NOT NULL DEFAULT ''`,
+  `ALTER TABLE repos ADD COLUMN instructions TEXT NOT NULL DEFAULT ''`,
+  `ALTER TABLE repos ADD COLUMN context_files TEXT NOT NULL DEFAULT '[]'`,
+]
 
 export function createDb(file: string) {
   const sqlite = new Database(file)
