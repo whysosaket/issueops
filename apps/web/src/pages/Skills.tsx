@@ -114,8 +114,8 @@ export default function Skills() {
       <p className="-mt-2 text-sm text-zinc-400">
         Skills are playbooks runs can load. Shipped skills cover the standard cases; add your own
         for team- or stack-specific know-how. By default the whole library mounts into every run —
-        curate which skills a repo gets via the <span className="text-zinc-200">Attached skills</span>{' '}
-        picker on that repo's page.
+        curate which skills a repo gets via the{' '}
+        <span className="text-zinc-200">Attached skills</span> picker on that repo's page.
       </p>
       {creating && (
         <NewSkillForm

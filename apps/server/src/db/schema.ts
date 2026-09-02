@@ -64,6 +64,15 @@ export const runs = sqliteTable('runs', {
   finishedAt: text('finished_at'),
 })
 
+export const activity = sqliteTable('activity', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  kind: text('kind').notNull(),
+  message: text('message').notNull(),
+  repoId: integer('repo_id'),
+  runId: integer('run_id'),
+  createdAt: text('created_at').notNull(),
+})
+
 export const runEvents = sqliteTable(
   'run_events',
   {

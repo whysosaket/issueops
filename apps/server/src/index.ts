@@ -3,6 +3,7 @@ import { serve } from '@hono/node-server'
 import { ensureAppDirs, loadConfig, paths } from '@issueops/shared/node'
 import { eq } from 'drizzle-orm'
 import pkg from '../package.json'
+import { record } from './activity'
 import { createApi } from './api'
 import type { AppContext } from './context'
 import { createDb } from './db'
@@ -56,6 +57,7 @@ function main(): void {
 
   const server = serve({ fetch: app.fetch, hostname: config.host, port: config.port }, (info) => {
     log.info(`issueops daemon v${pkg.version} listening on http://${config.host}:${info.port}`)
+    record(db, events, 'daemon', `daemon v${pkg.version} started`)
   })
   const stopScheduler = startScheduler(ctx)
   queue.tick()

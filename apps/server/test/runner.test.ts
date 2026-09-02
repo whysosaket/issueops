@@ -7,7 +7,7 @@ import { GlobalConfigSchema } from '@issueops/shared'
 import { asc, eq } from 'drizzle-orm'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { createDb } from '../src/db'
-import { issues, repos, runEvents, runs } from '../src/db/schema'
+import { activity, issues, repos, runEvents, runs } from '../src/db/schema'
 import { buildClaudeArgs, executeRun, type RunnerDeps } from '../src/runner'
 
 const stub = path.resolve(path.dirname(fileURLToPath(import.meta.url)), 'fixtures/claude-stub.mjs')
@@ -76,6 +76,10 @@ describe('executeRun', () => {
       .all()
     expect(events).toHaveLength(3)
     expect(JSON.parse(events[0]?.event ?? '{}').type).toBe('system')
+
+    const feed = deps.db.select().from(activity).all()
+    expect(feed.some((a) => a.kind === 'run' && a.message.includes('started'))).toBe(true)
+    expect(feed.some((a) => a.kind === 'run' && a.message.includes('succeeded'))).toBe(true)
   })
 
   it('marks the run failed on nonzero exit and keeps stderr context', async () => {

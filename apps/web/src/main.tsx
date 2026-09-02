@@ -3,6 +3,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import { Layout } from './components'
+import Activity from './pages/Activity'
 import Home from './pages/Home'
 import RepoDetail from './pages/RepoDetail'
 import RunDetail from './pages/RunDetail'
@@ -25,6 +26,7 @@ if (root) {
               <Route index element={<Home />} />
               <Route path="repos/:id" element={<RepoDetail />} />
               <Route path="runs/:id" element={<RunDetail />} />
+              <Route path="activity" element={<Activity />} />
               <Route path="skills" element={<Skills />} />
               <Route path="settings" element={<Settings />} />
             </Route>

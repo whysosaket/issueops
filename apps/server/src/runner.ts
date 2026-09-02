@@ -11,6 +11,7 @@ import {
   type StateLabel,
 } from '@issueops/shared'
 import { eq } from 'drizzle-orm'
+import { record } from './activity'
 import type { Db } from './db'
 import { issues, repos, runEvents, runs } from './db/schema'
 import { bestEffort, type GitHubService } from './github'
@@ -106,6 +107,10 @@ export async function executeRun(deps: RunnerDeps, runId: number): Promise<void>
     .run()
   events.emit(`run:${runId}:status`, 'running')
   log.info(`run ${runId}: starting for ${repo.owner}/${repo.name}#${issue.number}`)
+  record(db, events, 'run', `run ${runId} started: ${repo.owner}/${repo.name}#${issue.number}`, {
+    repoId: repo.id,
+    runId,
+  })
 
   if (github) {
     await bestEffort('label in-progress', () =>
@@ -251,6 +256,13 @@ export async function executeRun(deps: RunnerDeps, runId: number): Promise<void>
   events.emit(`run:${runId}:status`, status)
   const cost = collected.costUsd
   log.info(`run ${runId}: ${status}${cost != null ? ` (cost $${cost.toFixed(2)})` : ''}`)
+  record(
+    db,
+    events,
+    status === 'succeeded' ? 'run' : 'error',
+    `run ${runId} ${status}: #${issue.number}${resultLine?.status ? ` → ${resultLine.status}` : ''}${cost != null ? ` ($${cost.toFixed(2)})` : ''}${error ? ` — ${error.slice(0, 200)}` : ''}`,
+    { repoId: repo.id, runId },
+  )
 
   if (!github) return
   if (status === 'succeeded') {

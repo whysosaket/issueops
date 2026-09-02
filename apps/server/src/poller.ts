@@ -1,4 +1,5 @@
 import { and, eq } from 'drizzle-orm'
+import { record } from './activity'
 import type { AppContext } from './context'
 import { issues, repos, runs } from './db/schema'
 import { checkEligibility } from './eligibility'
@@ -89,17 +90,33 @@ export async function pollRepo(
     )
     if (!check.eligible) {
       log.info(`skip ${repo.owner}/${repo.name}#${r.number}: ${check.reason}`)
+      if (!check.reason.includes('state label') && !check.reason.includes('already processed')) {
+        record(ctx.db, ctx.events, 'skip', `skipped #${r.number} "${r.title}": ${check.reason}`, {
+          repoId: repo.id,
+        })
+      }
       continue
     }
-    createRun(ctx, {
+    const runId = createRun(ctx, {
       repoId: repo.id,
       issueId: issueRow.id,
       issueNumber: r.number,
       trigger: 'poll',
     })
+    record(ctx.db, ctx.events, 'run', `queued run ${runId} for #${r.number} "${r.title}"`, {
+      repoId: repo.id,
+      runId,
+    })
     enqueued++
   }
 
   ctx.db.update(repos).set({ lastPolledAt: polledAt }).where(eq(repos.id, repo.id)).run()
+  record(
+    ctx.db,
+    ctx.events,
+    'poll',
+    `polled ${repo.owner}/${repo.name}: ${remote.length} issue(s) seen, ${enqueued} enqueued`,
+    { repoId: repo.id },
+  )
   return { discovered: remote.length, enqueued }
 }

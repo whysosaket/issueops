@@ -91,6 +91,9 @@ export function Layout() {
             <NavLink to="/" end className={navClass}>
               Dashboard
             </NavLink>
+            <NavLink to="/activity" className={navClass}>
+              Activity
+            </NavLink>
             <NavLink to="/skills" className={navClass}>
               Skills
             </NavLink>

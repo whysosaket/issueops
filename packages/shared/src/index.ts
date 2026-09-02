@@ -165,6 +165,18 @@ export interface SkillInfo {
   size: number
 }
 
+export const ACTIVITY_KINDS = ['daemon', 'poll', 'skip', 'run', 'repo', 'error'] as const
+export type ActivityKind = (typeof ACTIVITY_KINDS)[number]
+
+export interface ActivityItem {
+  id: number
+  kind: ActivityKind
+  message: string
+  repoId: number | null
+  runId: number | null
+  createdAt: string
+}
+
 export interface Health {
   status: 'ok'
   version: string

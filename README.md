@@ -28,6 +28,9 @@ GitHub issues ──poll──▶ issueops daemon ──spawns──▶ claude -
 5. Claude Code does the work and reports back; the daemon applies state labels
    (`issueops:in-progress`, `issueops:planned`, `issueops:done`, `issueops:failed`,
    `issueops:needs-info`) and records the full transcript, cost, and PR link.
+6. Everything is observable live in the dashboard: each run streams its transcript in real
+   time, and the **Activity** page is a live feed of polls, discovered issues, skip reasons
+   ("why wasn't my issue picked up?"), and run lifecycle events.
 
 ### Autonomy levels (per repo)
 

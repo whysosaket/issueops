@@ -55,6 +55,14 @@ CREATE TABLE IF NOT EXISTS runs (
   started_at TEXT,
   finished_at TEXT
 );
+CREATE TABLE IF NOT EXISTS activity (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  kind TEXT NOT NULL,
+  message TEXT NOT NULL,
+  repo_id INTEGER,
+  run_id INTEGER,
+  created_at TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS run_events (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   run_id INTEGER NOT NULL REFERENCES runs(id),

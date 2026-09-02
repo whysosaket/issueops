@@ -19,8 +19,9 @@ import { and, desc, eq, inArray } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { streamSSE } from 'hono/streaming'
 import { ZodError, z } from 'zod'
+import { ACTIVITY_EVENT, record } from './activity'
 import type { AppContext } from './context'
-import { issues, repos, runEvents, runs } from './db/schema'
+import { activity, issues, repos, runEvents, runs } from './db/schema'
 import { bestEffort, detectGitHubRemote } from './github'
 import { log } from './logger'
 import { createRun, pollRepo } from './poller'
@@ -115,6 +116,9 @@ export function createApi(ctx: AppContext): Hono {
       })
       .returning()
       .get()
+    record(db, ctx.events, 'repo', `connected ${remote.owner}/${remote.name}`, {
+      repoId: row.id,
+    })
     await bestEffort('ensure labels', () => ctx.github.ensureLabels(remote.owner, remote.name))
     pollRepo(ctx, row.id).catch((err) =>
       log.error(`initial poll failed for ${remote.owner}/${remote.name}`, err),
@@ -155,10 +159,12 @@ export function createApi(ctx: AppContext): Hono {
       .all()
       .map((r) => r.id)
     if (runIds.length) db.delete(runEvents).where(inArray(runEvents.runId, runIds)).run()
+    const repoRow = db.select().from(repos).where(eq(repos.id, id)).get()
     db.delete(runs).where(eq(runs.repoId, id)).run()
     db.delete(issues).where(eq(issues.repoId, id)).run()
     db.delete(repos).where(eq(repos.id, id)).run()
     removeRepoSkillsMount(id)
+    record(db, ctx.events, 'repo', `disconnected ${repoRow?.owner}/${repoRow?.name}`)
     return c.json({ ok: true })
   })
 
@@ -210,6 +216,10 @@ export function createApi(ctx: AppContext): Hono {
       issueId: issue.id,
       issueNumber: issue.number,
       trigger: 'manual',
+    })
+    record(db, ctx.events, 'run', `manually dispatched #${issue.number} "${issue.title}"`, {
+      repoId: issue.repoId,
+      runId,
     })
     return c.json({ runId }, 201)
   })
@@ -265,7 +275,13 @@ export function createApi(ctx: AppContext): Hono {
       ctx.events.emit(`run:${id}:status`, 'cancelled')
       return c.json({ ok: true })
     }
-    if (run.status === 'running' && cancelRun(id)) return c.json({ ok: true })
+    if (run.status === 'running' && cancelRun(id)) {
+      record(db, ctx.events, 'run', `cancel requested for run ${id}`, {
+        repoId: run.repoId,
+        runId: id,
+      })
+      return c.json({ ok: true })
+    }
     return c.json({ error: `run is ${run.status}` }, 409)
   })
 
@@ -312,6 +328,55 @@ export function createApi(ctx: AppContext): Hono {
         }
       } finally {
         ctx.events.off(`run:${runId}:event`, onEvent)
+      }
+    })
+  })
+
+  app.get('/api/activity', (c) => {
+    const limit = Math.min(Number(c.req.query('limit') ?? 100), 500)
+    return c.json(db.select().from(activity).orderBy(desc(activity.id)).limit(limit).all())
+  })
+
+  app.get('/api/activity/stream', (c) => {
+    const after = Number(c.req.query('after') ?? 0)
+    return streamSSE(c, async (stream) => {
+      const pending: { id: number }[] = []
+      const onActivity = (item: { id: number }) => pending.push(item)
+      ctx.events.on(ACTIVITY_EVENT, onActivity)
+      try {
+        const replay = db
+          .select()
+          .from(activity)
+          .orderBy(desc(activity.id))
+          .limit(100)
+          .all()
+          .reverse()
+        let lastId = after
+        for (const item of replay) {
+          if (item.id <= after) continue
+          lastId = item.id
+          await stream.writeSSE({ event: 'item', data: JSON.stringify(item), id: String(item.id) })
+        }
+        let idleTicks = 0
+        while (!stream.closed) {
+          while (pending.length) {
+            const item = pending.shift()
+            if (item && item.id > lastId) {
+              lastId = item.id
+              idleTicks = 0
+              await stream.writeSSE({
+                event: 'item',
+                data: JSON.stringify(item),
+                id: String(item.id),
+              })
+            }
+          }
+          idleTicks++
+          if (idleTicks % 15 === 0) await stream.writeSSE({ event: 'ping', data: '' })
+          await stream.sleep(1000)
+        }
+      } finally {
+        ctx.events.off(ACTIVITY_EVENT, onActivity)
       }
     })
   })

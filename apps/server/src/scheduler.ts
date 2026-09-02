@@ -1,4 +1,5 @@
 import { eq } from 'drizzle-orm'
+import { record } from './activity'
 import type { AppContext } from './context'
 import { repos } from './db/schema'
 import { log } from './logger'
@@ -17,6 +18,13 @@ export function startScheduler(ctx: AppContext): () => void {
         log.info(`polled ${repo.owner}/${repo.name}`, result)
       } catch (err) {
         log.error(`poll failed for ${repo.owner}/${repo.name}`, err)
+        record(
+          ctx.db,
+          ctx.events,
+          'error',
+          `poll failed for ${repo.owner}/${repo.name}: ${err instanceof Error ? err.message : err}`,
+          { repoId: repo.id },
+        )
       }
     }
     ctx.queue.tick()
